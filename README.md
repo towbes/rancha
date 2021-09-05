@@ -7,7 +7,7 @@
 
 - When you first launch rancha you will be at the Login screen.  There are two ways to log in:
 
-![Login Screen](https://github.com/towbes/rancha/blob/main/images/LoginScreen.jpg?raw=true)
+![Login Screen](https://github.com/towbes/rancha/blob/main/images/LoginScreen.JPG?raw=true)
 
 1. Account Name + Password + Server
 
@@ -19,7 +19,7 @@
 
 - You can then click File -> Saved Profiles to view the profiles screen:
 
-![Profiles](https://github.com/towbes/rancha/blob/main/images/Profiles.jpg?raw=true)
+![Profiles](https://github.com/towbes/rancha/blob/main/images/Profiles.JPG?raw=true)
 
 - Click on the character you want to log in, then press the Login button.
 
