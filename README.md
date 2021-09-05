@@ -30,5 +30,13 @@
 ## What it does
 
 - Saves characters for each account name in separate files
+ 
+- You can add save multiple characters for each account.  Enter the character names one at a time and click save (while keeping the same account information entered)
 
 - Allows you to launch more than 2 DAOC windows (by stopping the DAOC mutex)
+ 
+ ## Known Issues / To Do items
+ 
+ - At this time you have to save specific character information.  If you just save account + password it will not show on the listview
+ 
+ - Would like to add the "teams" feature to launch multiple characters at once
