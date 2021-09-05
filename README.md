@@ -5,6 +5,10 @@
 
 - Rancha expects your DAOC installation to be at C:\Program Files (x86)\Electronic Arts\Dark Age of Camelot\
 
+- Download the repository and unzip to a directory.  Rancha.exe and login.dll have to be in the same directory.
+
+- The directory should be writeable so rancha can save character profiles into a folder called 'accounts'
+
 - When you first launch rancha you will be at the Login screen.  There are two ways to log in:
 
 ![Login Screen](https://github.com/towbes/rancha/blob/main/images/LoginScreen.JPG?raw=true)
