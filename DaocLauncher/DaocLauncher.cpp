@@ -44,7 +44,7 @@ int main()
     //old hardcoded command this is what should be passed to the command line for launching game.dll (yes game.dll gets written twice)
     //WCHAR lpCommandLine[] = L"game.dll 107.21.60.95 10622 23 sx3wally XXXXXXXX";
 
-
+   
     
     //start the game.dll process
     STARTUPINFO info = { sizeof(info) };
