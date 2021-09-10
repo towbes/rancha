@@ -236,20 +236,26 @@ int main(int, char**)
                     loginClicked++;
                 }
                 ImGui::SameLine();
-                bool saveAcctClicked = false;
+                static int saveAcctClicked = 0;
                 if (ImGui::Button("Save Account"))
-                if (saveAcctClicked)
+                    saveAcctClicked++;
+                if (saveAcctClicked & 1)
                 {
-                    ImGui::SameLine();
-                    ImGui::Text("Thanks for clicking me!");
+                    //account only
+                    Account tmpacct = Account{ charToWChar(acctname), charToWChar(password) };
+                    SaveAcct(tmpacct);
+                    saveAcctClicked++;
                 }
                 ImGui::SameLine();
-                bool saveCharClicked = false;
+                static int saveCharClicked = 0;
                 if (ImGui::Button("Save Character"))
-                if (saveCharClicked)
+                    saveCharClicked++;
+                if (saveCharClicked & 1)
                 {
-                    ImGui::SameLine();
-                    ImGui::Text("Thanks for clicking me!");
+                    Account tmpacct = Account{ charToWChar(acctname), charToWChar(password) };
+                    Character tmpchar = Character{ charToWChar(charname), server_current_idx , realm_current_idx };
+                    SaveChar(tmpacct, tmpchar);
+                    saveCharClicked++;
                 }
 
 
@@ -263,6 +269,7 @@ int main(int, char**)
         }
 
         if (acctWin) {
+
             if (ImGui::BeginChild("##acctscreen"))
             {
                 //First clear the character and account list
@@ -279,17 +286,18 @@ int main(int, char**)
                 int acctIndex = 0;
                 int charIndex = 0;
 
+                bool firstPass = true;
 
                 static int acctSelected;
-                static int server_current_idx;
+                static int server_current_idx = -1;
                 //Bool flag to set current_item and server_current_inx to 10 at first;
-                bool firstPass = true;
+                
                 static int acctLoginClicked = 0;
                 if (ImGui::Button("Login"))
                     acctLoginClicked++;
                 if (acctLoginClicked & 1)
                 {
-                    LaunchDaoc(server_current_idx + 1, WstringToWchar(acctList[acctSelected].GetAcctName()), WstringToWchar(acctList[acctSelected].GetAcctPassword()), NULL, NULL);
+                    LaunchDaoc(server_current_idx, WstringToWchar(acctList[acctSelected].GetAcctName()), WstringToWchar(acctList[acctSelected].GetAcctPassword()), NULL, NULL);
                     acctLoginClicked++;
                 }
                 ImGui::SameLine();
@@ -297,30 +305,22 @@ int main(int, char**)
                 ImGui::SameLine();
                 const char* servers[] = { "Ywain1", "Ywain2", "Ywain3", "Ywain4", "Ywain5", "Ywain6", "Ywain7", "Ywain8", "Ywain9", "Ywain10", "Gaheris" };
                 static const char* current_item = NULL;
-                if (firstPass) {
+                if (server_current_idx == -1) {
                     current_item = servers[10];
                     server_current_idx = 10;
                 }
-                if (ImGui::BeginCombo("##acctServerlist", current_item, ImGuiComboFlags_PopupAlignLeft))
+                if (ImGui::BeginCombo("##acctServerlist", servers[server_current_idx], ImGuiComboFlags_PopupAlignLeft))
                 {
                     for (int n = 0; n < IM_ARRAYSIZE(servers); n++)
                     {
-                        if (firstPass && n == 10) {
-                            ImGui::SetItemDefaultFocus();
-                            current_item = servers[10];
-                            server_current_idx = 10;
-                            firstPass = false;
-                        }
-                        else {
 
-                            const bool is_selected = (current_item == servers[n]);
+                            const bool is_selected = (server_current_idx == n);
                             if (ImGui::Selectable(servers[n], is_selected))
-                                current_item = servers[n];
+                                server_current_idx = n;
 
                             // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
                             if (is_selected)
                                 ImGui::SetItemDefaultFocus();
-                        }
                     }
                     ImGui::EndCombo();
                 }
@@ -370,7 +370,7 @@ int main(int, char**)
                     acctLoginClicked++;
                 if (acctLoginClicked & 1)
                 {
-                    LaunchDaoc(acctList[acctSelected].GetChars()[charIndex].GetServer() - 1, WstringToWchar(acctList[acctSelected].GetAcctName()),
+                    LaunchDaoc(acctList[acctSelected].GetChars()[charIndex].GetServer(), WstringToWchar(acctList[acctSelected].GetAcctName()),
                         WstringToWchar(acctList[acctSelected].GetAcctPassword()), WstringToWchar(acctList[acctSelected].GetChars()[charIndex].GetName()),
                         acctList[acctSelected].GetChars()[charIndex].GetRealm());
                     acctLoginClicked++;
@@ -404,15 +404,14 @@ int main(int, char**)
                                     }
                                     ImGui::TableNextColumn();
                                     int crealm = character.GetRealm();
-                                    //Realm is stored in character as 1,2,3
                                     switch (crealm) {
-                                        case 1:
+                                        case 0:
                                             ImGui::Text("Albion");
                                             break;
-                                        case 2:
+                                        case 1:
                                             ImGui::Text("Midgard");
                                             break;
-                                        case 3:
+                                        case 2:
                                             ImGui::Text("Hibernia");
                                             break;
                                         default:
@@ -420,7 +419,7 @@ int main(int, char**)
                                             break;
                                     }
                                     ImGui::TableNextColumn();
-                                    auto stmp = magic_enum::enum_cast<ServerName>(character.GetRealm());
+                                    auto stmp = magic_enum::enum_cast<ServerName>(character.GetServer());
                                     if (stmp.has_value()) {
                                         auto tmpStr = magic_enum::enum_name(stmp.value());
                                         ImGui::Text(static_cast<std::string>(tmpStr).c_str());

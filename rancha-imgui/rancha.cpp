@@ -82,7 +82,8 @@ bool SaveAcct(Account acct) {
 //Function to Launch DAOC through login.dll
 int LaunchDaoc(int server, const wchar_t* acct, const wchar_t* password, const wchar_t* character, int realm) {
     //realm Cmd expects: 1= alb, 2=mid, 3=hib
-
+    //incoming realm is is 0/1/2
+    realm++;
 
     //How do we pass the values to main(int argc, wchar_t** argv)
     //107.21.60.95 10622 23 sx3wally XXXXXXXX
