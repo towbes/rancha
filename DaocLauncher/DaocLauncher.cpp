@@ -13,6 +13,8 @@ int main()
     {
         return 0;
     }
+
+
     //Not enough arguments supplied
     if (nArgs < 5) {
         MessageBox(NULL, L"Not enough args", L"Error!", MB_ICONERROR | MB_OK);
@@ -34,8 +36,8 @@ int main()
                 options += L" ";
             }
         }
-
     }
+
     wchar_t* cmdptr = _wcsdup(options.c_str());
 
     //Change the directory to the DAOC directory
@@ -44,7 +46,7 @@ int main()
     //old hardcoded command this is what should be passed to the command line for launching game.dll (yes game.dll gets written twice)
     //WCHAR lpCommandLine[] = L"game.dll 107.21.60.95 10622 23 sx3wally XXXXXXXX";
 
-   
+
     
     //start the game.dll process
     STARTUPINFO info = { sizeof(info) };
@@ -53,9 +55,26 @@ int main()
     //Call game.dll with the proper command line args
     if (CreateProcess(L"C:\\Program Files (x86)\\Electronic Arts\\Dark Age of Camelot\\game.dll", cmdptr, NULL, NULL, TRUE, 0, NULL, NULL, &info, &processInfo))
     {
-        //Commented out, don't wait for the process
-        //WaitForSingleObject(processInfo.hProcess, INFINITE);
+        //Get the window handle to change the window title
+        // https://stackoverflow.com/questions/13454921/createprocess-and-get-the-handle
+        WaitForInputIdle(processInfo.hProcess, 2000);
 
+        HWND dwind = find_main_window(processInfo.dwProcessId);
+
+        wchar_t* charptr = NULL;
+        //Use char name for window name, or acct name if no char
+        if (nArgs > 5) {
+            std::wstring tmpChar = szArglist[5];
+            charptr = _wcsdup(tmpChar.c_str());
+        }
+        else {
+            std::wstring tmpChar = szArglist[3];
+            charptr = _wcsdup(tmpChar.c_str());
+        }
+
+        SetWindowText(dwind, charptr);
+
+        CloseHandle(dwind);
         CloseHandle(processInfo.hProcess);
         CloseHandle(processInfo.hThread);
     }
@@ -169,6 +188,20 @@ DWORD FindGameDll() {
     return pid;
 }
 
+//String helper function
+//https://stackoverflow.com/questions/52739477/how-to-return-copy-values-of-an-unique-ptrunsigned-char
+//https://stackoverflow.com/questions/21467014/memory-leak-when-using-smart-pointers
+const char* WstringToChar(std::wstring text)
+{
+    const wchar_t* inputW = text.c_str();
+    size_t charsConverted = 0;
+    wcstombs_s(&charsConverted, nullptr, 0, inputW, text.length());
+    auto outputString = std::unique_ptr<char[]>(new char[charsConverted]);
+
+    wcstombs_s(&charsConverted, outputString.get(), charsConverted, inputW, text.length());
+    return outputString.get();
+}
+
 // Run program: Ctrl + F5 or Debug > Start Without Debugging menu
 // Debug program: F5 or Debug > Start Debugging menu
 
@@ -179,3 +212,5 @@ DWORD FindGameDll() {
 //   4. Use the Error List window to view errors
 //   5. Go to Project > Add New Item to create new code files, or Project > Add Existing Item to add existing code files to the project
 //   6. In the future, to open this project again, go to File > Open > Project and select the .sln file
+
+
