@@ -35,13 +35,27 @@
 
 - Click on the character you want to log in, then press the Login button.
 
+- To use the teams page go to File -> Teams
+
+![Profiles](https://github.com/towbes/rancha/blob/main/images/imguiTeams.JPG?raw=true)
+
+- Click the characters you want to add to a team, and enter the team name in the box next to "Save Team" (selected characters are highlighted blue)
+
+- Click Save Team
+
+- The drop down menu will now have a list of saved teams, select the team you want, then press "Login".  All windows will launch
+
 ## What it does
 
 - Saves characters for each account name in separate files
+
+- Saves teams of characters
  
 - You can save multiple characters for each account.  Enter the character names one at a time and click save (while keeping the same account information entered)
 
 - Allows you to launch more than 2 DAOC windows (by stopping the DAOC mutex)
+
+- Changes the name of the window to the character name
 
 - Uses ImGui for UI, and cereal for saving/loading files
  

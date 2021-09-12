@@ -79,6 +79,41 @@ bool SaveAcct(Account acct) {
     return false;
 }
 
+//Helper function to save character information to disc.
+//If an account file already exists, it will load the acct data, and add the character to that accounts charList
+bool SaveTeam(Team newteam) {
+    //check if file exists
+    std::wstring path = L"teams\\";
+
+    if (PathExists(path)) {
+        std::fstream acct_file(path + newteam.GetName(), std::ios::in | std::ios::out | std::ios::binary);
+        if (acct_file.good()) {
+            //File exists
+            acct_file.close();
+            //Open a file for writing
+            std::ofstream tmp2_file(path + newteam.GetName(), std::ios::binary);
+            //Use cereal to write the temporary Account to disk
+            cereal::BinaryOutputArchive oarchive(tmp2_file);
+            oarchive((Team)newteam);
+            tmp2_file.close();
+            return true;
+        }
+        else {
+            acct_file.close();
+            //File doesn't exist so write the account to disk
+            std::ofstream tmp_file(path + newteam.GetName(), std::ios::binary);
+            //create output archive
+            cereal::BinaryOutputArchive oarchive(tmp_file);
+            oarchive(newteam);
+            tmp_file.close();
+            return true;
+        }
+    }
+
+
+    return false;
+}
+
 //Function to Launch DAOC through login.dll
 int LaunchDaoc(int server, const wchar_t* acct, const wchar_t* password, const wchar_t* character, int realm) {
     //realm Cmd expects: 1= alb, 2=mid, 3=hib
@@ -171,41 +206,67 @@ void FetchAccounts(std::vector<Account>& acctList) {
     //First clear the account list
     acctList.clear();
 
-    //Current working directory / accounts folder
     std::wstring path = L"accounts\\";
 
-    //Make sure the directory exists, if it doesn't create it
-    if (CreateDirectory(path.c_str(), NULL) ||
-        ERROR_ALREADY_EXISTS == GetLastError())
-    {
-        // CopyFile(...)
-    }
-    else
-    {
-        MessageBoxW(0, TEXT("Failed to create directory"), TEXT("Error"), MB_OK);
-    }
-
-    //Iterate over the files in the directory.  Catch errors
-    //Read in the Account objects with cereal
-    //Add the account objects to the acctList
-    try {
-        for (const auto& entry : std::filesystem::directory_iterator(path)) {
-            std::ifstream tmp_file(entry.path(), std::ios::binary);
-            cereal::BinaryInputArchive iarchive(tmp_file);
-            Account tmpAcct;
-            iarchive(tmpAcct);
-            acctList.push_back(tmpAcct);
-            tmp_file.close();
+    if (PathExists(path)) {
+        //Iterate over the files in the directory.  Catch errors
+        //Read in the Account objects with cereal
+        //Add the account objects to the acctList
+        try {
+            for (const auto& entry : std::filesystem::directory_iterator(path)) {
+                std::ifstream tmp_file(entry.path(), std::ios::binary);
+                cereal::BinaryInputArchive iarchive(tmp_file);
+                Account tmpAcct;
+                iarchive(tmpAcct);
+                acctList.push_back(tmpAcct);
+                tmp_file.close();
+            }
+        }
+        catch (const std::exception& exc)
+        {
+            size_t size = strlen(exc.what()) + 1;
+            wchar_t* etext = new wchar_t[size];
+            size_t outSize;
+            mbstowcs_s(&outSize, etext, size, exc.what(), size - 1);
+            // catch anything thrown within try block that derives from std::exception
+            MessageBoxW(0, etext, TEXT("Error"), MB_OK);
         }
     }
-    catch (const std::exception& exc)
-    {
-        size_t size = strlen(exc.what()) + 1;
-        wchar_t* etext = new wchar_t[size];
-        size_t outSize;
-        mbstowcs_s(&outSize, etext, size, exc.what(), size - 1);
-        // catch anything thrown within try block that derives from std::exception
-        MessageBoxW(0, etext, TEXT("Error"), MB_OK);
+
+}
+
+//Helper function to load accounts into vector acctList 
+//Pass the vector by reference so that it gets updated
+void FetchTeams(std::vector<Team>& teamList) {
+
+    //First clear the account list
+    teamList.clear();
+
+    std::wstring path = L"teams\\";
+
+    if (PathExists(path)) {
+        //Iterate over the files in the directory.  Catch errors
+        //Read in the Account objects with cereal
+        //Add the account objects to the acctList
+        try {
+            for (const auto& entry : std::filesystem::directory_iterator(path)) {
+                std::ifstream tmp_file(entry.path(), std::ios::binary);
+                cereal::BinaryInputArchive iarchive(tmp_file);
+                Team tmpTeam;
+                iarchive(tmpTeam);
+                teamList.push_back(tmpTeam);
+                tmp_file.close();
+            }
+        }
+        catch (const std::exception& exc)
+        {
+            size_t size = strlen(exc.what()) + 1;
+            wchar_t* etext = new wchar_t[size];
+            size_t outSize;
+            mbstowcs_s(&outSize, etext, size, exc.what(), size - 1);
+            // catch anything thrown within try block that derives from std::exception
+            MessageBoxW(0, etext, TEXT("Error"), MB_OK);
+        }
     }
 
 }
@@ -236,4 +297,22 @@ const char* WstringToChar(std::wstring text)
 
 wchar_t* WstringToWchar(std::wstring text) {
    return _wcsdup(text.c_str());
+}
+
+bool PathExists(std::wstring path) {
+    //Current working directory / accounts folder
+
+    //Make sure the directory exists, if it doesn't create it
+    if (CreateDirectory(path.c_str(), NULL) ||
+        ERROR_ALREADY_EXISTS == GetLastError())
+    {
+        return true;
+        // CopyFile(...)
+    }
+    else
+    {
+        MessageBoxW(0, TEXT("Failed to create directory"), TEXT("Error"), MB_OK);
+        return false;
+    }
+    return false;
 }

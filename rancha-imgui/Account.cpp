@@ -51,3 +51,47 @@ int Character::GetRealm() {
 	return realm;
 }
 
+TeamMember::TeamMember() {
+	acct;
+	charIndex = 0;
+
+}
+
+TeamMember::TeamMember(Account acctname, int charlistIndex) {
+	acct = acctname;
+	charIndex = charlistIndex;
+}
+
+Account TeamMember::GetAccount() {
+	return acct;
+}
+
+int TeamMember::GetCharIndex() {
+	return charIndex;
+}
+
+Team::Team() {
+	teamName = L"";
+	members;
+}
+
+Team::Team(std::vector<TeamMember> memberlist, std::wstring name) {
+	teamName = name;
+	members = memberlist;
+}
+
+std::wstring Team::GetName() {
+	return teamName;
+}
+
+void Team::ChangeName(std::wstring newname) {
+	teamName = newname;
+}
+
+std::vector<TeamMember> Team::GetMembers() {
+	return members;
+}
+
+void Team::AddMember(TeamMember newmember) {
+	members.push_back(newmember);
+}

@@ -27,6 +27,10 @@
 //Global Account and Charlist variables
 std::vector<Account> acctList{ Account(L"Blank", L"Blank") };
 std::vector<Character> charList{ Character(L"Blank", 1, 1) };
+std::vector<Team> teamList{ Team() };
+//Used to reference the account associated with a character in charList
+//The acctListIndex will allign with charListIndex
+std::vector<int> acctListIndex{ 0 };
 
 struct FrameContext
 {
@@ -61,6 +65,21 @@ void CleanupRenderTarget();
 void WaitForLastSubmittedFrame();
 FrameContext* WaitForNextFrameResources();
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
+// Helper to display a little (?) mark which shows a tooltip when hovered.
+// In your own code you may want to display an actual icon if you are using a merged icon fonts (see docs/FONTS.md)
+static void HelpMarker(const char* desc)
+{
+    ImGui::TextDisabled("(?)");
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::BeginTooltip();
+        ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
+        ImGui::TextUnformatted(desc);
+        ImGui::PopTextWrapPos();
+        ImGui::EndTooltip();
+    }
+}
 
 // Main code
 int main(int, char**)
@@ -159,10 +178,10 @@ int main(int, char**)
         {
             if (ImGui::BeginMenu("File"))
             {
-                if (ImGui::MenuItem("Login")) { acctWin = false;  charWin = false;  loginWin = true; }
-                if (ImGui::MenuItem("Accounts")) { loginWin = false;  charWin = false;  acctWin = true; }
-                if (ImGui::MenuItem("Characters")) { loginWin = false;  acctWin = false; charWin = true; }
-                if (ImGui::MenuItem("Teams")) { /*do stuff*/ }
+                if (ImGui::MenuItem("Login")) { teamWin = false;  acctWin = false;  charWin = false;  loginWin = true; }
+                if (ImGui::MenuItem("Accounts")) { teamWin = false;  loginWin = false;  charWin = false;  acctWin = true; }
+                if (ImGui::MenuItem("Characters")) { teamWin = false;  loginWin = false;  acctWin = false; charWin = true; }
+                if (ImGui::MenuItem("Teams")) { loginWin = false;  acctWin = false; charWin = false; teamWin = true;}
                 ImGui::EndMenu();
             }
             ImGui::EndMenuBar();
@@ -343,7 +362,6 @@ int main(int, char**)
             }
         }
 
-        /**/
         if (charWin) {
             if (ImGui::BeginChild("##charscreen"))
             {
@@ -436,12 +454,238 @@ int main(int, char**)
                         ImGui::Separator();
                     }
                 }
-
-
-
                 ImGui::EndChild();
             }
         }
+
+        if (teamWin) {
+            if (ImGui::BeginChild("##teamscreen"))
+            {
+                //First clear the character and account list
+                charList.clear();
+                acctList.clear();
+                acctListIndex.clear();
+                teamList.clear();
+
+                //Populate the account list
+                FetchAccounts(acctList);
+                FetchTeams(teamList);
+
+                //For each account draw a list of columns
+                //Count the number of characters in acctList https://stackoverflow.com/questions/22269435/how-to-iterate-through-a-list-of-objects-in-c
+                //Keep an index to store for later lookup
+                int charCount = 0;
+                int acctIndex = 0;
+                int charIndex = 0;
+
+                static int charSelected;
+                static int acctSelected;
+
+                //Used to store selection of characters
+                static std::vector<bool> c_selection;
+
+                //Stores the current teamList index for selection to login
+                static int teams_current_idx = 0;
+
+                static char teamname[64] = "";
+
+                //Login button
+                static int teamLoginClicked = 0;
+                if (ImGui::Button("Login"))
+                    teamLoginClicked++;
+                if (teamLoginClicked & 1)
+                {
+                    Team currTeam = teamList[teams_current_idx];
+                    for (auto& member : currTeam.GetMembers()) {
+                        LaunchDaoc(member.GetAccount().GetChars()[member.GetCharIndex()].GetServer(), 
+                            WstringToWchar(member.GetAccount().GetAcctName()),
+                            WstringToWchar(member.GetAccount().GetAcctPassword()), 
+                            WstringToWchar(member.GetAccount().GetChars()[member.GetCharIndex()].GetName()),
+                            member.GetAccount().GetChars()[member.GetCharIndex()].GetRealm());
+                        Sleep(1500);
+                    }
+
+                    teamLoginClicked++;
+                }
+                ImGui::SameLine();
+                ImGui::Text("Select Team");
+                
+                static const char* current_item = NULL;
+                
+                if (teamList.size() > 0) {
+                    ImGui::SameLine();
+                    const char* combo_preview_value = WstringToChar(teamList[teams_current_idx].GetName());
+
+                    if (ImGui::BeginCombo("##teamlist", combo_preview_value, ImGuiComboFlags_PopupAlignLeft))
+                    {
+                        
+                        for (int n = 0; n < teamList.size(); n++)
+                        {
+                            const bool is_selected = (teams_current_idx == n);
+                            if (ImGui::Selectable(WstringToChar(teamList[n].GetName()), is_selected))
+                                teams_current_idx = n;
+
+                            // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+                            if (is_selected)
+                                ImGui::SetItemDefaultFocus();
+                        }
+                        ImGui::EndCombo();
+                    }
+                }
+
+                static int createTeamClicked = 0;
+                if (ImGui::Button("Save Team"))
+                    createTeamClicked++;
+                if (createTeamClicked & 1)
+                {
+                    Team newTeam = { };
+                    newTeam.ChangeName(charToWChar(teamname));
+                    for (int i = 0; i < c_selection.size(); i++) {
+                        if (c_selection[i]) {
+                            int acctCharIndex = 0;
+                            int charCounter = 0;
+                            //Get char list of the character
+                            for (auto& character : acctList[i].GetChars()) {
+                                if (character.GetName() == charList[i].GetName() && character.GetServer() == charList[i].GetServer()) {
+                                    acctCharIndex = charCounter;
+                                    break;
+                                }
+                                charCounter++;
+                            }
+                            TeamMember tmp = TeamMember{ acctList[i] , acctCharIndex };
+                            newTeam.AddMember(tmp);
+                        }
+                    }
+                    SaveTeam(newTeam);
+
+                    /*
+                    LaunchDaoc(acctList[acctSelected].GetChars()[charIndex].GetServer(), WstringToWchar(acctList[acctSelected].GetAcctName()),
+                        WstringToWchar(acctList[acctSelected].GetAcctPassword()), WstringToWchar(acctList[acctSelected].GetChars()[charIndex].GetName()),
+                        acctList[acctSelected].GetChars()[charIndex].GetRealm());*/
+                    createTeamClicked++;
+                }
+
+                //Keep track of acctList that matches with the given charList index
+                int teamAcctCount = 0;
+                int teamCharCount = 0;
+
+                ImGui::SameLine();
+                ImGui::InputText("##teamname", teamname, IM_ARRAYSIZE(teamname));
+                
+                //Maybe we need to loop through and count characters to build the selection[] array
+                for (auto& acct : acctList) {
+                    for (auto& character : acct.GetChars()) {
+                        c_selection.push_back(false);
+                        acctListIndex.push_back(teamAcctCount);
+                        charList.push_back(character);
+                        teamCharCount++;
+                    }
+                    teamAcctCount++;
+                }
+                if (ImGui::BeginTable("##teamsCharacters", 4, ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Borders)) {
+
+                    for (int n = 0; n < teamCharCount; n++)
+                    {
+                        char buf[32];
+                        sprintf_s(buf, "%s", WstringToChar(charList[n].GetName()));
+                        ImGui::TableNextRow();
+                        ImGui::TableNextColumn();
+                        if (ImGui::Selectable(buf, c_selection[n], ImGuiSelectableFlags_SpanAllColumns)) {
+                            c_selection[n] = !c_selection[n];
+                        }
+                        ImGui::TableNextColumn();;
+                        int crealm = charList[n].GetRealm();
+                        switch (crealm) {
+                        case 0:
+                            ImGui::Text("Albion");
+                            break;
+                        case 1:
+                            ImGui::Text("Midgard");
+                            break;
+                        case 2:
+                            ImGui::Text("Hibernia");
+                            break;
+                        default:
+                            ImGui::Text("Error");
+                            break;
+                        }
+                        ImGui::TableNextColumn();
+                        auto stmp = magic_enum::enum_cast<ServerName>(charList[n].GetServer());
+                        if (stmp.has_value()) {
+                            auto tmpStr = magic_enum::enum_name(stmp.value());
+                            ImGui::Text(static_cast<std::string>(tmpStr).c_str());
+                        }
+                        ImGui::TableNextColumn();
+                        ImGui::PushID("##acct" + n);
+                        ImGui::Text(WstringToChar(acctList[acctListIndex[n]].GetAcctName()));
+                        ImGui::PopID();
+                    }
+                    ImGui::EndTable();
+                }
+                /*
+                //For each character in each account
+                for (auto& acct : acctList) {
+                    //Reset charIndex for each account
+                    charIndex = 0;
+                    ImGui::Text(WstringToChar(acct.GetAcctName()));
+                    if (acct.GetChars().size() > 0) {
+                        ImGui::Spacing();
+                        HelpMarker("Hold CTRL and click to select multiple items.");
+                        
+                        if (ImGui::BeginTable(WstringToChar(acct.GetAcctName()), 3, ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Borders))
+                        {
+                            static int selected = -1;
+                            static int selectedIndex = 0;
+                            for (auto& character : acct.GetChars()) {
+                                selectedIndex++;
+
+                                char label[50];
+                                sprintf_s(label, "%s", WstringToChar(character.GetName()));
+                                ImGui::TableNextRow();
+                                ImGui::TableNextColumn();
+                                if (ImGui::Selectable(label, selected == selectedIndex, ImGuiSelectableFlags_SpanAllColumns)) {
+                                    charSelected = charIndex;
+                                    acctSelected = acctIndex;
+                                    selected = selectedIndex;
+                                }
+                                ImGui::TableNextColumn();
+                                int crealm = character.GetRealm();
+                                switch (crealm) {
+                                case 0:
+                                    ImGui::Text("Albion");
+                                    break;
+                                case 1:
+                                    ImGui::Text("Midgard");
+                                    break;
+                                case 2:
+                                    ImGui::Text("Hibernia");
+                                    break;
+                                default:
+                                    ImGui::Text("Error");
+                                    break;
+                                }
+                                ImGui::TableNextColumn();
+                                auto stmp = magic_enum::enum_cast<ServerName>(character.GetServer());
+                                if (stmp.has_value()) {
+                                    auto tmpStr = magic_enum::enum_name(stmp.value());
+                                    ImGui::Text(static_cast<std::string>(tmpStr).c_str());
+                                }
+                                selectedIndex++;
+                                charIndex++;
+
+                            }
+                            ImGui::EndTable();
+                            acctIndex++;
+                        }
+                    }
+                    else {
+                        ImGui::Separator();
+                    }
+                }*/
+                ImGui::EndChild();
+            }
+        }
+
 
         ImGui::End();
         // Rendering

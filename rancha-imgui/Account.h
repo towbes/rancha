@@ -78,7 +78,44 @@ public:
 
 	std::vector<Character> GetChars();
 	void AddCharacter(Character character);
-	
-
 };
 
+class TeamMember {
+private:
+	Account acct;
+	int charIndex;
+
+	friend class cereal::access;
+
+	template <class Archive>
+	void serialize(Archive& ar) {
+		ar(this->acct, this->charIndex);
+	}
+
+public:
+	TeamMember();
+	TeamMember(Account acctname, int charlistIndex);
+	Account GetAccount();
+	int GetCharIndex();
+};
+
+class Team {
+private:
+	std::wstring teamName;
+	std::vector<TeamMember> members;
+
+	friend class cereal::access;
+
+	template <class Archive>
+	void serialize(Archive& ar) {
+		ar(this->teamName, this->members);
+	}
+
+public:
+	Team();
+	Team(std::vector<TeamMember> memberlist, std::wstring name);
+	std::wstring GetName();
+	void ChangeName(std::wstring newname);
+	std::vector<TeamMember> GetMembers();
+	void AddMember(TeamMember newmember);
+};
