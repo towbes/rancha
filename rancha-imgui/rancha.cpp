@@ -281,20 +281,6 @@ const wchar_t* charToWChar(const char* text)
     return cmdptr;
 }
 
-//String helper function
-//https://stackoverflow.com/questions/52739477/how-to-return-copy-values-of-an-unique-ptrunsigned-char
-//https://stackoverflow.com/questions/21467014/memory-leak-when-using-smart-pointers
-const char* WstringToChar(std::wstring text)
-{
-    const wchar_t* inputW = text.c_str();
-    size_t charsConverted = 0;
-    wcstombs_s(&charsConverted, nullptr, 0, inputW, text.length());
-    auto outputString = std::unique_ptr<char[]>(new char[charsConverted]);
-
-    wcstombs_s(&charsConverted, outputString.get(), charsConverted, inputW, text.length());
-    return outputString.get();
-}
-
 wchar_t* WstringToWchar(std::wstring text) {
    return _wcsdup(text.c_str());
 }

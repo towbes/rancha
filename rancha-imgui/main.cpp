@@ -88,7 +88,7 @@ int main(int, char**)
     //ImGui_ImplWin32_EnableDpiAwareness();
     WNDCLASSEX wc = { sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(NULL), NULL, NULL, NULL, NULL, _T("ImGui Example"), NULL };
     ::RegisterClassEx(&wc);
-    HWND hwnd = ::CreateWindow(wc.lpszClassName, _T("rancha-imgui"), WS_OVERLAPPEDWINDOW, 100, 100, 1280, 800, NULL, NULL, wc.hInstance, NULL);
+    HWND hwnd = ::CreateWindow(wc.lpszClassName, _T("rancha-imgui"), WS_OVERLAPPEDWINDOW, 100, 100, 800, 800, NULL, NULL, wc.hInstance, NULL);
 
     // Initialize Direct3D
     if (!CreateDeviceD3D(hwnd))
@@ -172,6 +172,7 @@ int main(int, char**)
         static float f = 0.0f;
         static int counter = 0;
 
+        ImGui::SetNextWindowSize(ImVec2(700, 700));
         ImGui::Begin("rancha-imgui", &rancha_active, ImGuiWindowFlags_MenuBar);                          // Create a window called "Hello, world!" and append into it.
 
         if (ImGui::BeginMenuBar())
@@ -190,45 +191,139 @@ int main(int, char**)
 
         if (loginWin)
         {
-            if (ImGui::BeginChild("Login Input"))
+            ImGui::BeginChild("Login Input");
+            static char password[64] = "";
+            static char acctname[64] = "";
+            static char charname[64] = "";
+            ImGui::Text("Login");
+            ImGui::Text("Account:");
+            ImGui::SameLine();
+            ImGui::InputText("##account", acctname, IM_ARRAYSIZE(acctname));
+            ImGui::Text("Password:");
+            ImGui::SameLine();
+            ImGui::InputText("##password", password, IM_ARRAYSIZE(password), ImGuiInputTextFlags_Password);
+            ImGui::Text("Character:");
+            ImGui::SameLine();
+            ImGui::InputText("##character", charname, IM_ARRAYSIZE(charname));
+            const char* realms[] = { "Albion", "Midgard", "Hibernia"};
+            static int realm_current_idx = 0; // Here we store our selection data as an index.
+            ImGui::Text("Realm");
+            if (ImGui::BeginListBox("##realmlist", ImVec2(0, ImGui::GetTextLineHeightWithSpacing() * 3)))
             {
-                static char password[64] = "";
-                static char acctname[64] = "";
-                static char charname[64] = "";
-                ImGui::Text("Login");
-                ImGui::Text("Account:");
-                ImGui::SameLine();
-                ImGui::InputText("##account", acctname, IM_ARRAYSIZE(acctname));
-                ImGui::Text("Password:");
-                ImGui::SameLine();
-                ImGui::InputText("##password", password, IM_ARRAYSIZE(password), ImGuiInputTextFlags_Password);
-                ImGui::Text("Character:");
-                ImGui::SameLine();
-                ImGui::InputText("##character", charname, IM_ARRAYSIZE(charname));
-                const char* realms[] = { "Albion", "Midgard", "Hibernia"};
-                static int realm_current_idx = 0; // Here we store our selection data as an index.
-                ImGui::Text("Realm");
-                if (ImGui::BeginListBox("##realmlist", ImVec2(0, ImGui::GetTextLineHeightWithSpacing() * 3)))
+                for (int n = 0; n < IM_ARRAYSIZE(realms); n++)
                 {
-                    for (int n = 0; n < IM_ARRAYSIZE(realms); n++)
-                    {
-                        const bool realm_selected = (realm_current_idx == n);
-                        if (ImGui::Selectable(realms[n], realm_selected))
-                            realm_current_idx = n;
+                    const bool realm_selected = (realm_current_idx == n);
+                    if (ImGui::Selectable(realms[n], realm_selected))
+                        realm_current_idx = n;
 
-                        // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
-                        if (realm_selected)
-                            ImGui::SetItemDefaultFocus();
-                    }
-                    ImGui::EndListBox();
+                    // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+                    if (realm_selected)
+                        ImGui::SetItemDefaultFocus();
                 }
-                ImGui::Text("Server");
-                const char* servers[] = { "Ywain1", "Ywain2", "Ywain3", "Ywain4", "Ywain5", "Ywain6", "Ywain7", "Ywain8", "Ywain9", "Ywain10", "Gaheris"};
-                static int server_current_idx = 0;
-                if (ImGui::BeginListBox("##serverlist", ImVec2(0, ImGui::GetTextLineHeightWithSpacing() * 11)))
+                ImGui::EndListBox();
+            }
+            ImGui::Text("Server");
+            const char* servers[] = { "Ywain1", "Ywain2", "Ywain3", "Ywain4", "Ywain5", "Ywain6", "Ywain7", "Ywain8", "Ywain9", "Ywain10", "Gaheris"};
+            static int server_current_idx = 0;
+            if (ImGui::BeginListBox("##serverlist", ImVec2(0, ImGui::GetTextLineHeightWithSpacing() * 11)))
+            {
+                for (int n = 0; n < IM_ARRAYSIZE(servers); n++)
                 {
-                    for (int n = 0; n < IM_ARRAYSIZE(servers); n++)
-                    {
+                    const bool is_selected = (server_current_idx == n);
+                    if (ImGui::Selectable(servers[n], is_selected))
+                        server_current_idx = n;
+
+                    // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+                    if (is_selected)
+                        ImGui::SetItemDefaultFocus();
+                }
+                ImGui::EndListBox();
+            }
+
+            static int loginClicked = 0;
+            if (ImGui::Button("Login"))
+                loginClicked++;
+            if (loginClicked & 1)
+            {
+                //account only
+                if (strlen(charname) == 0) {
+                    LaunchDaoc(server_current_idx, charToWChar(acctname), charToWChar(password), NULL, NULL);
+                }
+                else {
+                    LaunchDaoc(server_current_idx, charToWChar(acctname), charToWChar(password), charToWChar(charname), realm_current_idx);
+                }
+                loginClicked++;
+            }
+            ImGui::SameLine();
+            static int saveAcctClicked = 0;
+            if (ImGui::Button("Save Account"))
+                saveAcctClicked++;
+            if (saveAcctClicked & 1)
+            {
+                //account only
+                Account tmpacct = Account{ charToWChar(acctname), charToWChar(password) };
+                SaveAcct(tmpacct);
+                saveAcctClicked++;
+            }
+            ImGui::SameLine();
+            static int saveCharClicked = 0;
+            if (ImGui::Button("Save Character"))
+                saveCharClicked++;
+            if (saveCharClicked & 1)
+            {
+                Account tmpacct = Account{ charToWChar(acctname), charToWChar(password) };
+                Character tmpchar = Character{ charToWChar(charname), server_current_idx , realm_current_idx };
+                SaveChar(tmpacct, tmpchar);
+                saveCharClicked++;
+            }
+            ImGui::EndChild();
+        }
+
+        if (acctWin) {
+
+            ImGui::BeginChild("##acctscreen");
+            //First clear the character and account list
+            charList.clear();
+            acctList.clear();
+
+            //Populate the account list
+            FetchAccounts(acctList);
+
+            //For each account draw a list of columns
+            //Count the number of characters in acctList https://stackoverflow.com/questions/22269435/how-to-iterate-through-a-list-of-objects-in-c
+            //Keep an index to store for later lookup
+            int charCount = 0;
+            int acctIndex = 0;
+            int charIndex = 0;
+
+            bool firstPass = true;
+
+            static int acctSelected;
+            static int server_current_idx = -1;
+            //Bool flag to set current_item and server_current_inx to 10 at first;
+                
+            static int acctLoginClicked = 0;
+            if (ImGui::Button("Login"))
+                acctLoginClicked++;
+            if (acctLoginClicked & 1)
+            {
+                LaunchDaoc(server_current_idx, WstringToWchar(acctList[acctSelected].GetAcctName()), WstringToWchar(acctList[acctSelected].GetAcctPassword()), NULL, NULL);
+                acctLoginClicked++;
+            }
+            ImGui::SameLine();
+            ImGui::Text("Server");
+            ImGui::SameLine();
+            const char* servers[] = { "Ywain1", "Ywain2", "Ywain3", "Ywain4", "Ywain5", "Ywain6", "Ywain7", "Ywain8", "Ywain9", "Ywain10", "Gaheris" };
+            static const char* current_item = NULL;
+            if (server_current_idx == -1) {
+                current_item = servers[10];
+                server_current_idx = 10;
+            }
+            if (ImGui::BeginCombo("##acctServerlist", servers[server_current_idx], ImGuiComboFlags_PopupAlignLeft))
+            {
+                for (int n = 0; n < IM_ARRAYSIZE(servers); n++)
+                {
+
                         const bool is_selected = (server_current_idx == n);
                         if (ImGui::Selectable(servers[n], is_selected))
                             server_current_idx = n;
@@ -236,413 +331,81 @@ int main(int, char**)
                         // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
                         if (is_selected)
                             ImGui::SetItemDefaultFocus();
-                    }
-                    ImGui::EndListBox();
                 }
-
-                static int loginClicked = 0;
-                if (ImGui::Button("Login"))
-                    loginClicked++;
-                if (loginClicked & 1)
-                {
-                    //account only
-                    if (strlen(charname) == 0) {
-                        LaunchDaoc(server_current_idx, charToWChar(acctname), charToWChar(password), NULL, NULL);
-                    }
-                    else {
-                        LaunchDaoc(server_current_idx, charToWChar(acctname), charToWChar(password), charToWChar(charname), realm_current_idx);
-                    }
-                    loginClicked++;
-                }
-                ImGui::SameLine();
-                static int saveAcctClicked = 0;
-                if (ImGui::Button("Save Account"))
-                    saveAcctClicked++;
-                if (saveAcctClicked & 1)
-                {
-                    //account only
-                    Account tmpacct = Account{ charToWChar(acctname), charToWChar(password) };
-                    SaveAcct(tmpacct);
-                    saveAcctClicked++;
-                }
-                ImGui::SameLine();
-                static int saveCharClicked = 0;
-                if (ImGui::Button("Save Character"))
-                    saveCharClicked++;
-                if (saveCharClicked & 1)
-                {
-                    Account tmpacct = Account{ charToWChar(acctname), charToWChar(password) };
-                    Character tmpchar = Character{ charToWChar(charname), server_current_idx , realm_current_idx };
-                    SaveChar(tmpacct, tmpchar);
-                    saveCharClicked++;
-                }
-
-
-                ImGui::EndChild();
+                ImGui::EndCombo();
             }
 
 
 
-
-
-        }
-
-        if (acctWin) {
-
-            if (ImGui::BeginChild("##acctscreen"))
-            {
-                //First clear the character and account list
-                charList.clear();
-                acctList.clear();
-
-                //Populate the account list
-                FetchAccounts(acctList);
-
-                //For each account draw a list of columns
-                //Count the number of characters in acctList https://stackoverflow.com/questions/22269435/how-to-iterate-through-a-list-of-objects-in-c
-                //Keep an index to store for later lookup
-                int charCount = 0;
-                int acctIndex = 0;
-                int charIndex = 0;
-
-                bool firstPass = true;
-
-                static int acctSelected;
-                static int server_current_idx = -1;
-                //Bool flag to set current_item and server_current_inx to 10 at first;
-                
-                static int acctLoginClicked = 0;
-                if (ImGui::Button("Login"))
-                    acctLoginClicked++;
-                if (acctLoginClicked & 1)
-                {
-                    LaunchDaoc(server_current_idx, WstringToWchar(acctList[acctSelected].GetAcctName()), WstringToWchar(acctList[acctSelected].GetAcctPassword()), NULL, NULL);
-                    acctLoginClicked++;
-                }
-                ImGui::SameLine();
-                ImGui::Text("Server");
-                ImGui::SameLine();
-                const char* servers[] = { "Ywain1", "Ywain2", "Ywain3", "Ywain4", "Ywain5", "Ywain6", "Ywain7", "Ywain8", "Ywain9", "Ywain10", "Gaheris" };
-                static const char* current_item = NULL;
-                if (server_current_idx == -1) {
-                    current_item = servers[10];
-                    server_current_idx = 10;
-                }
-                if (ImGui::BeginCombo("##acctServerlist", servers[server_current_idx], ImGuiComboFlags_PopupAlignLeft))
-                {
-                    for (int n = 0; n < IM_ARRAYSIZE(servers); n++)
-                    {
-
-                            const bool is_selected = (server_current_idx == n);
-                            if (ImGui::Selectable(servers[n], is_selected))
-                                server_current_idx = n;
-
-                            // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
-                            if (is_selected)
-                                ImGui::SetItemDefaultFocus();
-                    }
-                    ImGui::EndCombo();
-                }
-
-
-
-                ImGui::Text("Account:");
-                //For each character in each account
-                for (auto& acct : acctList) {
-                    //if there are characters
-                    char buf[32];
-                    sprintf_s(buf, "%s", WstringToChar(acct.GetAcctName()));
-                    if (ImGui::Selectable(buf, acctSelected == acctIndex))
-                        acctSelected = acctIndex;
-                    //ImGui::Text(WstringToChar(acct.GetAcctName()));
-                    acctIndex++;
-                }
-
-                ImGui::EndChild();
+            ImGui::Text("Account:");
+            //For each character in each account
+            for (auto& acct : acctList) {
+                //if there are characters
+                char buf[32];
+                sprintf_s(buf, "%s", wstring_to_utf8(acct.GetAcctName()).c_str());
+                if (ImGui::Selectable(buf, acctSelected == acctIndex))
+                    acctSelected = acctIndex;
+                //ImGui::Text(WstringToChar(acct.GetAcctName()));
+                acctIndex++;
             }
+
+            ImGui::EndChild();
         }
 
         if (charWin) {
-            if (ImGui::BeginChild("##charscreen"))
+            ImGui::BeginChild("##charscreen");
+            //First clear the character and account list
+            charList.clear();
+            acctList.clear();
+
+            //Populate the account list
+            FetchAccounts(acctList);
+
+            //For each account draw a list of columns
+            //Count the number of characters in acctList https://stackoverflow.com/questions/22269435/how-to-iterate-through-a-list-of-objects-in-c
+            //Keep an index to store for later lookup
+            int charCount = 0;
+            int acctIndex = 0;
+            int charIndex = 0;
+
+            static int charSelected;
+            static int acctSelected;
+                
+                
+            static int acctLoginClicked = 0;
+            if (ImGui::Button("Login"))
+                acctLoginClicked++;
+            if (acctLoginClicked & 1)
             {
-                //First clear the character and account list
-                charList.clear();
-                acctList.clear();
-
-                //Populate the account list
-                FetchAccounts(acctList);
-
-                //For each account draw a list of columns
-                //Count the number of characters in acctList https://stackoverflow.com/questions/22269435/how-to-iterate-through-a-list-of-objects-in-c
-                //Keep an index to store for later lookup
-                int charCount = 0;
-                int acctIndex = 0;
-                int charIndex = 0;
-
-                static int charSelected;
-                static int acctSelected;
-                
-                
-                static int acctLoginClicked = 0;
-                if (ImGui::Button("Login"))
-                    acctLoginClicked++;
-                if (acctLoginClicked & 1)
-                {
-                    LaunchDaoc(acctList[acctSelected].GetChars()[charIndex].GetServer(), WstringToWchar(acctList[acctSelected].GetAcctName()),
-                        WstringToWchar(acctList[acctSelected].GetAcctPassword()), WstringToWchar(acctList[acctSelected].GetChars()[charIndex].GetName()),
-                        acctList[acctSelected].GetChars()[charIndex].GetRealm());
-                    acctLoginClicked++;
-                }
-
-                //For each character in each account
-                for (auto& acct : acctList) {
-                    //Reset charIndex for each account
-                    charIndex = 0;
-                    //if there are characters
-                    //ImGui::Text("Account:");
-                    //ImGui::SameLine();
-                    ImGui::Text(WstringToChar(acct.GetAcctName()));
-                    if (acct.GetChars().size() > 0) {
-                        ImGui::Spacing();
-                        if (ImGui::BeginTable(WstringToChar(acct.GetAcctName()), 3, ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Borders))
-                        {
-                            static int selected = -1;
-                            static int selectedIndex = 0;
-                            for (auto& character : acct.GetChars()) {
-                                    selectedIndex++;
-
-                                    char label[50];
-                                    sprintf_s(label, "%s", WstringToChar(character.GetName()));
-                                    ImGui::TableNextRow();
-                                    ImGui::TableNextColumn();
-                                    if (ImGui::Selectable(label, selected == selectedIndex, ImGuiSelectableFlags_SpanAllColumns)) {
-                                        charSelected = charIndex;
-                                        acctSelected = acctIndex;
-                                        selected = selectedIndex;
-                                    }
-                                    ImGui::TableNextColumn();
-                                    int crealm = character.GetRealm();
-                                    switch (crealm) {
-                                        case 0:
-                                            ImGui::Text("Albion");
-                                            break;
-                                        case 1:
-                                            ImGui::Text("Midgard");
-                                            break;
-                                        case 2:
-                                            ImGui::Text("Hibernia");
-                                            break;
-                                        default:
-                                            ImGui::Text("Error");
-                                            break;
-                                    }
-                                    ImGui::TableNextColumn();
-                                    auto stmp = magic_enum::enum_cast<ServerName>(character.GetServer());
-                                    if (stmp.has_value()) {
-                                        auto tmpStr = magic_enum::enum_name(stmp.value());
-                                        ImGui::Text(static_cast<std::string>(tmpStr).c_str());
-                                    }
-                                    selectedIndex++;
-                                    charIndex++;
-                                
-                            }
-                            ImGui::EndTable();
-                            acctIndex++;
-                        }
-                    }
-                    else {
-                        ImGui::Separator();
-                    }
-                }
-                ImGui::EndChild();
+                LaunchDaoc(acctList[acctSelected].GetChars()[charIndex].GetServer(), WstringToWchar(acctList[acctSelected].GetAcctName()),
+                    WstringToWchar(acctList[acctSelected].GetAcctPassword()), WstringToWchar(acctList[acctSelected].GetChars()[charIndex].GetName()),
+                    acctList[acctSelected].GetChars()[charIndex].GetRealm());
+                acctLoginClicked++;
             }
-        }
 
-        if (teamWin) {
-            if (ImGui::BeginChild("##teamscreen"))
-            {
-                //First clear the character and account list
-                charList.clear();
-                acctList.clear();
-                acctListIndex.clear();
-                teamList.clear();
 
-                //Populate the account list
-                FetchAccounts(acctList);
-                FetchTeams(teamList);
-
-                //For each account draw a list of columns
-                //Count the number of characters in acctList https://stackoverflow.com/questions/22269435/how-to-iterate-through-a-list-of-objects-in-c
-                //Keep an index to store for later lookup
-                int charCount = 0;
-                int acctIndex = 0;
-                int charIndex = 0;
-
-                static int charSelected;
-                static int acctSelected;
-
-                //Used to store selection of characters
-                static std::vector<bool> c_selection;
-
-                //Stores the current teamList index for selection to login
-                static int teams_current_idx = 0;
-
-                static char teamname[64] = "";
-
-                //Login button
-                static int teamLoginClicked = 0;
-                if (ImGui::Button("Login"))
-                    teamLoginClicked++;
-                if (teamLoginClicked & 1)
-                {
-                    Team currTeam = teamList[teams_current_idx];
-                    for (auto& member : currTeam.GetMembers()) {
-                        LaunchDaoc(member.GetAccount().GetChars()[member.GetCharIndex()].GetServer(), 
-                            WstringToWchar(member.GetAccount().GetAcctName()),
-                            WstringToWchar(member.GetAccount().GetAcctPassword()), 
-                            WstringToWchar(member.GetAccount().GetChars()[member.GetCharIndex()].GetName()),
-                            member.GetAccount().GetChars()[member.GetCharIndex()].GetRealm());
-                        Sleep(1500);
-                    }
-
-                    teamLoginClicked++;
-                }
-                ImGui::SameLine();
-                ImGui::Text("Select Team");
-                
-                static const char* current_item = NULL;
-                
-                if (teamList.size() > 0) {
-                    ImGui::SameLine();
-                    const char* combo_preview_value = WstringToChar(teamList[teams_current_idx].GetName());
-
-                    if (ImGui::BeginCombo("##teamlist", combo_preview_value, ImGuiComboFlags_PopupAlignLeft))
+            //For each character in each account
+            for (auto& acct : acctList) {
+                //Reset charIndex for each account
+                charIndex = 0;
+                //if there are characters
+                //ImGui::Text("Account:");
+                //ImGui::SameLine();
+                ImGui::Text(wstring_to_utf8(acct.GetAcctName()).c_str());
+                if (acct.GetChars().size() > 0) {
+                    ImGui::Spacing();
+                    if (ImGui::BeginTable(wstring_to_utf8(acct.GetAcctName()).c_str(), 3, ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Borders))
                     {
-                        
-                        for (int n = 0; n < teamList.size(); n++)
-                        {
-                            const bool is_selected = (teams_current_idx == n);
-                            if (ImGui::Selectable(WstringToChar(teamList[n].GetName()), is_selected))
-                                teams_current_idx = n;
-
-                            // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
-                            if (is_selected)
-                                ImGui::SetItemDefaultFocus();
-                        }
-                        ImGui::EndCombo();
-                    }
-                }
-
-                static int createTeamClicked = 0;
-                if (ImGui::Button("Save Team"))
-                    createTeamClicked++;
-                if (createTeamClicked & 1)
-                {
-                    Team newTeam = { };
-                    newTeam.ChangeName(charToWChar(teamname));
-                    for (int i = 0; i < c_selection.size(); i++) {
-                        if (c_selection[i]) {
-                            int acctCharIndex = 0;
-                            int charCounter = 0;
-                            //Get char list of the character
-                            for (auto& character : acctList[i].GetChars()) {
-                                if (character.GetName() == charList[i].GetName() && character.GetServer() == charList[i].GetServer()) {
-                                    acctCharIndex = charCounter;
-                                    break;
-                                }
-                                charCounter++;
-                            }
-                            TeamMember tmp = TeamMember{ acctList[i] , acctCharIndex };
-                            newTeam.AddMember(tmp);
-                        }
-                    }
-                    SaveTeam(newTeam);
-
-                    /*
-                    LaunchDaoc(acctList[acctSelected].GetChars()[charIndex].GetServer(), WstringToWchar(acctList[acctSelected].GetAcctName()),
-                        WstringToWchar(acctList[acctSelected].GetAcctPassword()), WstringToWchar(acctList[acctSelected].GetChars()[charIndex].GetName()),
-                        acctList[acctSelected].GetChars()[charIndex].GetRealm());*/
-                    createTeamClicked++;
-                }
-
-                //Keep track of acctList that matches with the given charList index
-                int teamAcctCount = 0;
-                int teamCharCount = 0;
-
-                ImGui::SameLine();
-                ImGui::InputText("##teamname", teamname, IM_ARRAYSIZE(teamname));
-                
-                //Maybe we need to loop through and count characters to build the selection[] array
-                for (auto& acct : acctList) {
-                    for (auto& character : acct.GetChars()) {
-                        c_selection.push_back(false);
-                        acctListIndex.push_back(teamAcctCount);
-                        charList.push_back(character);
-                        teamCharCount++;
-                    }
-                    teamAcctCount++;
-                }
-                if (ImGui::BeginTable("##teamsCharacters", 4, ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Borders)) {
-
-                    for (int n = 0; n < teamCharCount; n++)
-                    {
-                        char buf[32];
-                        sprintf_s(buf, "%s", WstringToChar(charList[n].GetName()));
-                        ImGui::TableNextRow();
-                        ImGui::TableNextColumn();
-                        if (ImGui::Selectable(buf, c_selection[n], ImGuiSelectableFlags_SpanAllColumns)) {
-                            c_selection[n] = !c_selection[n];
-                        }
-                        ImGui::TableNextColumn();;
-                        int crealm = charList[n].GetRealm();
-                        switch (crealm) {
-                        case 0:
-                            ImGui::Text("Albion");
-                            break;
-                        case 1:
-                            ImGui::Text("Midgard");
-                            break;
-                        case 2:
-                            ImGui::Text("Hibernia");
-                            break;
-                        default:
-                            ImGui::Text("Error");
-                            break;
-                        }
-                        ImGui::TableNextColumn();
-                        auto stmp = magic_enum::enum_cast<ServerName>(charList[n].GetServer());
-                        if (stmp.has_value()) {
-                            auto tmpStr = magic_enum::enum_name(stmp.value());
-                            ImGui::Text(static_cast<std::string>(tmpStr).c_str());
-                        }
-                        ImGui::TableNextColumn();
-                        ImGui::PushID("##acct" + n);
-                        ImGui::Text(WstringToChar(acctList[acctListIndex[n]].GetAcctName()));
-                        ImGui::PopID();
-                    }
-                    ImGui::EndTable();
-                }
-                /*
-                //For each character in each account
-                for (auto& acct : acctList) {
-                    //Reset charIndex for each account
-                    charIndex = 0;
-                    ImGui::Text(WstringToChar(acct.GetAcctName()));
-                    if (acct.GetChars().size() > 0) {
-                        ImGui::Spacing();
-                        HelpMarker("Hold CTRL and click to select multiple items.");
-                        
-                        if (ImGui::BeginTable(WstringToChar(acct.GetAcctName()), 3, ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Borders))
-                        {
-                            static int selected = -1;
-                            static int selectedIndex = 0;
-                            for (auto& character : acct.GetChars()) {
+                        static int selected = -1;
+                        static int selectedIndex = 0;
+                        for (auto& character : acct.GetChars()) {
                                 selectedIndex++;
 
                                 char label[50];
-                                sprintf_s(label, "%s", WstringToChar(character.GetName()));
+                                sprintf_s(label, "%s", wstring_to_utf8(character.GetName()).c_str());
                                 ImGui::TableNextRow();
                                 ImGui::TableNextColumn();
+
                                 if (ImGui::Selectable(label, selected == selectedIndex, ImGuiSelectableFlags_SpanAllColumns)) {
                                     charSelected = charIndex;
                                     acctSelected = acctIndex;
@@ -651,18 +414,18 @@ int main(int, char**)
                                 ImGui::TableNextColumn();
                                 int crealm = character.GetRealm();
                                 switch (crealm) {
-                                case 0:
-                                    ImGui::Text("Albion");
-                                    break;
-                                case 1:
-                                    ImGui::Text("Midgard");
-                                    break;
-                                case 2:
-                                    ImGui::Text("Hibernia");
-                                    break;
-                                default:
-                                    ImGui::Text("Error");
-                                    break;
+                                    case 0:
+                                        ImGui::Text("Albion");
+                                        break;
+                                    case 1:
+                                        ImGui::Text("Midgard");
+                                        break;
+                                    case 2:
+                                        ImGui::Text("Hibernia");
+                                        break;
+                                    default:
+                                        ImGui::Text("Error");
+                                        break;
                                 }
                                 ImGui::TableNextColumn();
                                 auto stmp = magic_enum::enum_cast<ServerName>(character.GetServer());
@@ -672,18 +435,184 @@ int main(int, char**)
                                 }
                                 selectedIndex++;
                                 charIndex++;
-
-                            }
-                            ImGui::EndTable();
-                            acctIndex++;
+                                
                         }
+                        ImGui::EndTable();
+                        acctIndex++;
                     }
-                    else {
-                        ImGui::Separator();
-                    }
-                }*/
-                ImGui::EndChild();
+                }
+                else {
+                    ImGui::Separator();
+                }
             }
+            ImGui::EndChild();
+        }
+
+        if (teamWin) {
+
+            ImGui::BeginChild("##teamscreen");
+            //First clear the character and account list
+            charList.clear();
+            acctList.clear();
+            acctListIndex.clear();
+            teamList.clear();
+
+            //Populate the account list
+            FetchAccounts(acctList);
+            FetchTeams(teamList);
+
+            //For each account draw a list of columns
+            //Count the number of characters in acctList https://stackoverflow.com/questions/22269435/how-to-iterate-through-a-list-of-objects-in-c
+            //Keep an index to store for later lookup
+            int charCount = 0;
+            int acctIndex = 0;
+            int charIndex = 0;
+
+            static int charSelected;
+            static int acctSelected;
+
+            //Used to store selection of characters
+            static std::vector<bool> c_selection;
+
+            //Stores the current teamList index for selection to login
+            static int teams_current_idx = 0;
+
+            static char teamname[64] = "";
+
+            //Login button
+            static int teamLoginClicked = 0;
+            if (ImGui::Button("Login"))
+                teamLoginClicked++;
+            if (teamLoginClicked & 1)
+            {
+                Team currTeam = teamList[teams_current_idx];
+                for (auto& member : currTeam.GetMembers()) {
+                    LaunchDaoc(member.GetAccount().GetChars()[member.GetCharIndex()].GetServer(), 
+                        WstringToWchar(member.GetAccount().GetAcctName()),
+                        WstringToWchar(member.GetAccount().GetAcctPassword()), 
+                        WstringToWchar(member.GetAccount().GetChars()[member.GetCharIndex()].GetName()),
+                        member.GetAccount().GetChars()[member.GetCharIndex()].GetRealm());
+                    Sleep(1500);
+                }
+
+                teamLoginClicked++;
+            }
+            ImGui::SameLine();
+            ImGui::Text("Select Team");
+                
+            static const char* current_item = NULL;
+                
+            if (teamList.size() > 0) {
+                ImGui::SameLine();
+                const char* combo_preview_value = wstring_to_utf8(teamList[teams_current_idx].GetName()).c_str();
+
+                if (ImGui::BeginCombo("##teamlist", combo_preview_value, ImGuiComboFlags_PopupAlignLeft))
+                {
+                        
+                    for (int n = 0; n < teamList.size(); n++)
+                    {
+                        const bool is_selected = (teams_current_idx == n);
+                        if (ImGui::Selectable(wstring_to_utf8(teamList[n].GetName()).c_str(), is_selected))
+                            teams_current_idx = n;
+
+                        // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
+                        if (is_selected)
+                            ImGui::SetItemDefaultFocus();
+                    }
+                    ImGui::EndCombo();
+                }
+            }
+
+            static int createTeamClicked = 0;
+            if (ImGui::Button("Save Team"))
+                createTeamClicked++;
+            if (createTeamClicked & 1)
+            {
+                Team newTeam = { };
+                newTeam.ChangeName(charToWChar(teamname));
+                for (int i = 0; i < c_selection.size(); i++) {
+                    if (c_selection[i]) {
+                        int acctCharIndex = 0;
+                        int charCounter = 0;
+                        //Get char list of the character
+                        for (auto& character : acctList[i].GetChars()) {
+                            if (character.GetName() == charList[i].GetName() && character.GetServer() == charList[i].GetServer()) {
+                                acctCharIndex = charCounter;
+                                break;
+                            }
+                            charCounter++;
+                        }
+                        TeamMember tmp = TeamMember{ acctList[i] , acctCharIndex };
+                        newTeam.AddMember(tmp);
+                    }
+                }
+                SaveTeam(newTeam);
+
+                /*
+                LaunchDaoc(acctList[acctSelected].GetChars()[charIndex].GetServer(), WstringToWchar(acctList[acctSelected].GetAcctName()),
+                    WstringToWchar(acctList[acctSelected].GetAcctPassword()), WstringToWchar(acctList[acctSelected].GetChars()[charIndex].GetName()),
+                    acctList[acctSelected].GetChars()[charIndex].GetRealm());*/
+                createTeamClicked++;
+            }
+
+            //Keep track of acctList that matches with the given charList index
+            int teamAcctCount = 0;
+            int teamCharCount = 0;
+
+            ImGui::SameLine();
+            ImGui::InputText("##teamname", teamname, IM_ARRAYSIZE(teamname));
+                
+            //Maybe we need to loop through and count characters to build the selection[] array
+            for (auto& acct : acctList) {
+                for (auto& character : acct.GetChars()) {
+                    c_selection.push_back(false);
+                    acctListIndex.push_back(teamAcctCount);
+                    charList.push_back(character);
+                    teamCharCount++;
+                }
+                teamAcctCount++;
+            }
+            if (ImGui::BeginTable("##teamsCharacters", 4, ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Borders)) {
+
+                for (int n = 0; n < teamCharCount; n++)
+                {
+                    char buf[32];
+                    sprintf_s(buf, "%s", wstring_to_utf8(charList[n].GetName()).c_str());
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn();
+                    if (ImGui::Selectable(buf, c_selection[n], ImGuiSelectableFlags_SpanAllColumns)) {
+                        c_selection[n] = !c_selection[n];
+                    }
+                    ImGui::TableNextColumn();;
+                    int crealm = charList[n].GetRealm();
+                    switch (crealm) {
+                    case 0:
+                        ImGui::Text("Albion");
+                        break;
+                    case 1:
+                        ImGui::Text("Midgard");
+                        break;
+                    case 2:
+                        ImGui::Text("Hibernia");
+                        break;
+                    default:
+                        ImGui::Text("Error");
+                        break;
+                    }
+                    ImGui::TableNextColumn();
+                    auto stmp = magic_enum::enum_cast<ServerName>(charList[n].GetServer());
+                    if (stmp.has_value()) {
+                        auto tmpStr = magic_enum::enum_name(stmp.value());
+                        ImGui::Text(static_cast<std::string>(tmpStr).c_str());
+                    }
+                    ImGui::TableNextColumn();
+                    ImGui::PushID("##acct" + n);
+                    ImGui::Text(wstring_to_utf8(acctList[acctListIndex[n]].GetAcctName()).c_str());
+                    ImGui::PopID();
+                }
+                ImGui::EndTable();
+            }
+            ImGui::EndChild();
         }
 
 
