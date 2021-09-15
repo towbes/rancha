@@ -503,9 +503,8 @@ int main(int, char**)
                 
             if (teamList.size() > 0) {
                 ImGui::SameLine();
-                const char* combo_preview_value = wstring_to_utf8(teamList[teams_current_idx].GetName()).c_str();
 
-                if (ImGui::BeginCombo("##teamlist", combo_preview_value, ImGuiComboFlags_PopupAlignLeft))
+                if (ImGui::BeginCombo("##teamlist", wstring_to_utf8(teamList[teams_current_idx].GetName()).c_str(), ImGuiComboFlags_PopupAlignLeft))
                 {
                         
                     for (int n = 0; n < teamList.size(); n++)

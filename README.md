@@ -1,5 +1,13 @@
 # rancha
  Multibox Character Launcher for Dark Age of Camelot
+ 
+## No install required
+
+- If you just want to run it (and not compile from source), the following two files need to be in the same directory (for example create a directory in your downloads folder called 'rancha':
+
+rancha-imgui.exe : https://github.com/towbes/rancha/blob/main/Pre-Compiled/rancha-imgui.exe
+
+login.dll : https://github.com/towbes/rancha/blob/main/Pre-Compiled/login.dll
 
 ## Usage Instructions
 
