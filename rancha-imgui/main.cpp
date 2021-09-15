@@ -383,7 +383,8 @@ int main(int, char**)
                 acctLoginClicked++;
             }
 
-
+            
+            int selectedIndex = 0;
             //For each character in each account
             for (auto& acct : acctList) {
                 //Reset charIndex for each account
@@ -391,21 +392,18 @@ int main(int, char**)
                 //if there are characters
                 //ImGui::Text("Account:");
                 //ImGui::SameLine();
+                static int selected = -1;
+                
                 ImGui::Text(wstring_to_utf8(acct.GetAcctName()).c_str());
                 if (acct.GetChars().size() > 0) {
                     ImGui::Spacing();
                     if (ImGui::BeginTable(wstring_to_utf8(acct.GetAcctName()).c_str(), 3, ImGuiTableFlags_Resizable | ImGuiTableFlags_NoSavedSettings | ImGuiTableFlags_Borders))
                     {
-                        static int selected = -1;
-                        static int selectedIndex = 0;
                         for (auto& character : acct.GetChars()) {
-                                selectedIndex++;
-
                                 char label[50];
                                 sprintf_s(label, "%s", wstring_to_utf8(character.GetName()).c_str());
                                 ImGui::TableNextRow();
                                 ImGui::TableNextColumn();
-
                                 if (ImGui::Selectable(label, selected == selectedIndex, ImGuiSelectableFlags_SpanAllColumns)) {
                                     charSelected = charIndex;
                                     acctSelected = acctIndex;
@@ -438,12 +436,13 @@ int main(int, char**)
                                 
                         }
                         ImGui::EndTable();
-                        acctIndex++;
+                        
                     }
                 }
                 else {
                     ImGui::Separator();
                 }
+                acctIndex++;
             }
             ImGui::EndChild();
         }
